@@ -109,7 +109,7 @@ new playerData[MAX_PLAYERS + 1][playerInfo], Array:playerSkins[MAX_PLAYERS + 1],
 	bool:canPickup[MAX_PLAYERS + 1], Array:skins, Array:weapons, Array:market, Handle:sql, Handle:connection, saveType, marketSkins, multipleSkins, defaultSkins,
 	skinChance, skinChanceSVIP, silencerAttached, Float:skinChancePerMember, maxMarketSkins, Float:marketCommision, Float:killReward, Float:killHSReward,
 	Float:bombReward, Float:defuseReward, Float:hostageReward, Float:winReward, Float:botMultiplier, Float:vipMultiplier, Float:svipMultiplier, minPlayers,
-	minPlayerFilter, bool:end, bool:sqlConnected, sqlHost[64], sqlUser[64], sqlPassword[64], sqlDatabase[64], skinsPath[64], force, resetHandle, weaponHud;
+	minPlayerFilter, bool:end, bool:sqlConnected, sqlHost[64], sqlUser[64], sqlPassword[64], sqlDatabase[64], skinsPath[64], force, resetHandle, weaponHud, Float:startMoney;
 
 native csgo_get_zeus(id);
 
@@ -146,6 +146,7 @@ public plugin_init()
 	bind_pcvar_float(create_cvar("csgo_multiplier_vip", "1.25"), vipMultiplier);
 	bind_pcvar_float(create_cvar("csgo_multiplier_svip", "1.5"), svipMultiplier);
 	bind_pcvar_float(create_cvar("csgo_multiplier_bot", "0.5"), botMultiplier);
+	bind_pcvar_float(create_cvar("csgo_startmoney", "5000.0"), startMoney);
 
 	for (new i; i < sizeof commandSkins; i++) register_clcmd(commandSkins[i], "skins_menu");
 	for (new i; i < sizeof commandHelp; i++) register_clcmd(commandHelp[i], "skins_help");
@@ -3390,9 +3391,10 @@ public load_data_handle(failState, Handle:query, error[], errorNum, playerId[], 
 		if (SQL_ReadResult(query, SQL_FieldNameToNum(query, "skins"))) playerData[id][SKINS_BLOCKED] = true;
 	} else {
 		new queryData[256];
+		playerData[id][MONEY] = startMoney;
 
-		formatex(queryData, charsmax(queryData), "INSERT INTO `csgo_data` (`name`, `steamid`, `money`, `exchange`, `menu`, `hud`, `skins`, `online`) VALUES (^"%s^",^"%s^", '0', '0', '0', '0', '0', '0');",
-			playerData[id][SAFE_NAME], playerData[id][STEAM_ID]);
+		formatex(queryData, charsmax(queryData), "INSERT INTO `csgo_data` (`name`, `steamid`, `money`, `exchange`, `menu`, `hud`, `skins`, `online`) VALUES (^"%s^",^"%s^", %f, '0', '0', '0', '0', '0');",
+			playerData[id][SAFE_NAME], playerData[id][STEAM_ID], playerData[id][MONEY]);
 
 		SQL_ThreadQuery(sql, "ignore_handle", queryData);
 	}
