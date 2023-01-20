@@ -422,11 +422,17 @@ public register_confirmation_handle(id, menu, item)
 			set_hudmessage(0, 255, 0, -1.0, 0.9, 0, 0.0, 3.5, 0.0, 0.0);
 			show_hudmessage(id, "%L", id, "CSGO_ACCOUNTS_HUD_REGISTER_SUCCESS");
 
-			client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_REGISTER_SUCCESS");
-			client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_SETINFO_HELP", setinfo, playerData[id][PASSWORD]);
+			switch (saveType) {
+					case SAVE_NAME: {
+						client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_REGISTER_SUCCESS_NICK");
+						client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_SETINFO_HELP", setinfo, playerData[id][PASSWORD]);
 
-			cmd_execute(id, "setinfo _%s %s", setinfo, playerData[id][PASSWORD]);
-			cmd_execute(id, "writecfg %s", setinfo);
+						cmd_execute(id, "setinfo _%s %s", setinfo, playerData[id][PASSWORD]);
+						cmd_execute(id, "writecfg %s", setinfo);
+					}
+					case SAVE_STEAM_ID: client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_REGISTER_SUCCESS_STEAMID");
+			}
+
 		} case 1: {
 			client_print_color(id, id, "%s %L", CHAT_PREFIX, id, "CSGO_ACCOUNTS_REGISTER_STARTED");
 
@@ -713,32 +719,48 @@ public load_account_handle(failState, Handle:query, error[], errorNum, tempId[],
 	}
 
 	if (SQL_MoreResults(query)) {
-		SQL_ReadResult(query, SQL_FieldNameToNum(query, "pass"), playerData[id][PASSWORD], charsmax(playerData[][PASSWORD]));
 
-		if (playerData[id][PASSWORD][0]) {
-			new password[32], info[32];
-
-			formatex(info, charsmax(info), "_%s", setinfo);
-
-			cmd_execute(id, "exec %s.cfg", setinfo);
-
-			get_user_info(id, info, password, charsmax(password));
-
-			if (equal(playerData[id][PASSWORD], password)) {
+		if (saveType == SAVE_STEAM_ID)
+		{
+			new stid[32];
+			SQL_ReadResult(query, SQL_FieldNameToNum(query, "steamid"), stid, charsmax(stid));
+			if (equal(playerData[id][STEAM_ID], stid)) {
 				playerData[id][STATUS] = LOGGED;
 
 				set_bit(id, autoLogin);
-
 				ExecuteForward(loginForward, forwardResult, id);
-
 			} else {
 				playerData[id][STATUS] = NOT_LOGGED;
 			}
+		}
+		else
+		{
+			SQL_ReadResult(query, SQL_FieldNameToNum(query, "pass"), playerData[id][PASSWORD], charsmax(playerData[][PASSWORD]));
 
-			cmd_execute(id, "exec config.cfg");
+			if (playerData[id][PASSWORD][0]) {
+				new password[32], info[32];
+
+				formatex(info, charsmax(info), "_%s", setinfo);
+
+				cmd_execute(id, "exec %s.cfg", setinfo);
+
+				get_user_info(id, info, password, charsmax(password));
+
+				if (equal(playerData[id][PASSWORD], password)) {
+					playerData[id][STATUS] = LOGGED;
+
+					set_bit(id, autoLogin);
+
+					ExecuteForward(loginForward, forwardResult, id);
+
+				} else {
+					playerData[id][STATUS] = NOT_LOGGED;
+				}
+
+				cmd_execute(id, "exec config.cfg");
+			}
 		}
 	}
-
 	set_bit(id, dataLoaded);
 }
 
